@@ -1,5 +1,5 @@
 import {asyncHandler} from "../utils/asyncHandler.js"
-import {ApiError} from "../utils/apiError.js"
+import {apiError} from "../utils/apiError.js"
 import {User} from "../models/user.model.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -19,7 +19,7 @@ const registerUser = asyncHandler(async (req, res)=>{
       //check: not empty
       if([username, email, password, fullName].some((field)=> field?.trim() ==="")) 
       {
-         throw new ApiError(400 , "All Fields required")
+         throw new apiError(400 , "All Fields required")
       }
 
       //check : valid email format
@@ -28,7 +28,7 @@ const registerUser = asyncHandler(async (req, res)=>{
           email.startsWith("@") ||
           email.endsWith("@")
       ) {
-         throw new ApiError(400, "Invalid Email Format")
+         throw new apiError(400, "Invalid Email Format")
       }
 
       //check : user already exist
@@ -40,23 +40,25 @@ const registerUser = asyncHandler(async (req, res)=>{
       })
 
       if(existingUser) {
-         throw new ApiError(409, "User with Email or Username already exists")
+         throw new apiError(409, "User with Email or Username already exists")
       }
 
       //check: avatar and coverimage
-      const filePathAvatar= req.files?.avatar?.[0]
-      const filePathCoverImage= req.files?.coverImage?.[0]
+      const filePathAvatar= req.files?.avatar?.[0]?.path
+      const filePathCoverImage= req.files?.coverImage?.[0]?.path
+
+      console.log(filePathAvatar)
 
       if(!filePathAvatar) {
-         throw new ApiError(400, "Avatar is required");
+          throw new apiError(400, "Avatar is required");
       }
 
       //upload : on cloudinary
-      const avatarObj= await uploadOnCloudinary(filePathAvatar.path)
-      const coverObj = await uploadOnCloudinary(filePathCoverImage.path)
-
+      const avatarObj= await uploadOnCloudinary(filePathAvatar)
+      const coverObj = await uploadOnCloudinary(filePathCoverImage)
+     
       if(!avatarObj) {
-         throw new ApiError(400, "Avatar file is requried")
+         throw new apiError(400, "Avatar file is requried")
       }
 
       // Upload : database 
@@ -71,12 +73,12 @@ const registerUser = asyncHandler(async (req, res)=>{
 
       //check : user created and remove sensitive information
 
-      const createdUser= await user.findById(user._id).select(
+      const createdUser= await User.findById(user._id).select(
          "-password -refreshToken"
       )
 
       if(!createdUser) {
-         throw new ApiError(500, "something went wrong while registering the user")
+         throw new apiError(500, "something went wrong while registering the user")
       }
 
       // response
