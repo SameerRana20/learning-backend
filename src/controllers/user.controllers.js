@@ -89,4 +89,62 @@ const registerUser = asyncHandler(async (req, res)=>{
 
 })
 
-export {registerUser}
+//-----------USER LOGIN------------
+
+const loginUser =asyncHandler(async(req, res)=> {
+    
+//get data from frontend-- username ,email, password
+   const {email, username , password}= req.body
+
+// check if user exists
+   if(!username && !email) {
+      throw new apiError(400, "Username or Email is requried")
+   } 
+
+   let query = email? {email} : {username}
+
+   const user = await User.findOne(query)
+
+   if(!user) {
+      throw new apiError(404, "user not found")
+   }
+
+// check if password is correct using  custom method isPasswordCorrect
+   let checkPassword = await user.isPasswordCorrect(password) 
+
+   if(!checkPassword) {
+      throw new apiError(401, "invalid password credentials")
+   }
+
+//generate a access token and refresh token
+   const accessToken = user.generateAccessToken()
+   const refreshToken = user.generateRefreshToken()
+
+   user.refreshToken = refreshToken()
+   await user.save({validateBeforeSave: false})
+
+   const finalUserDocument  = User.findById(user._id).select(
+      "-password -refreshToken"
+   )
+
+//send  cookie  and response
+   res
+   .status(200)
+   .cookie("accessToken" ,accessToken, {httpOnly: true, secure: true})
+   .cookie("refreshToken", refreshToken, {httpOnly: true, secure: true})
+   .json( 
+      new ApiResponse(200 , finalUserDocument , "user Logged in successfully")
+    )
+
+   
+
+    
+
+})
+
+   const logoutUser  = asyncHandler( async(req, res)=>{
+      // removing refresh token from document 
+      
+   })
+
+export {registerUser, loginUser}
