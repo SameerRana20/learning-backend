@@ -1,4 +1,4 @@
-import { apiError } from "../utils/apiError"
+import { apiError } from "../utils/apiError.js"
 import jwt from "jsonwebtoken"
 
 const verifyJWT= (req, res , next)=>{
